@@ -17,7 +17,7 @@ namespace LambdaSharp.SentimentAnalysis.Api {
         [JsonProperty("instances")]
         public IEnumerable<string> Instances { get; set; }
     }
-    
+
     public static class StringExtensions {
         public static MemoryStream ToStream(this string str) {
             var memoryStream = new MemoryStream();
@@ -27,7 +27,7 @@ namespace LambdaSharp.SentimentAnalysis.Api {
             memoryStream.Position = 0;
             return memoryStream;
         }
-        
+
         public static string AsString(this MemoryStream stream) {
             var reader = new StreamReader(stream);
             var str = reader.ReadToEnd();
@@ -35,7 +35,7 @@ namespace LambdaSharp.SentimentAnalysis.Api {
             return str;
         }
     }
-    
+
     public class Function : ALambdaFunction<APIGatewayProxyRequest, APIGatewayProxyResponse> {
         //--- Fields ---
         private string _sagemakerEndpoint;
@@ -48,14 +48,25 @@ namespace LambdaSharp.SentimentAnalysis.Api {
         }
 
         public override async Task<APIGatewayProxyResponse> ProcessMessageAsync(APIGatewayProxyRequest request, ILambdaContext context) {
-        
+
             // TODO: add business logic
             LogInfo("Call the InvokeEndpoint method");
             LogInfo(_sagemakerEndpoint);
             LogInfo(request.Body);
+
+            var sagemakerRequest = new InvokeEndpointRequest{
+                Body = request.Body.ToStream(),
+                ContentType = "application/json",
+                EndpointName = _sagemakerEndpoint
+            };
+
+            var response = await _runtimeClient.InvokeEndpointAsync(sagemakerRequest);
+
+            var responseBody = response.Body.AsString();
+
             return new APIGatewayProxyResponse {
                 StatusCode = 200,
-                Body = "{\"response body goes here!\"}"
+                Body = responseBody
             };
         }
     }
